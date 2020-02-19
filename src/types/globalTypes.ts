@@ -1093,6 +1093,11 @@ export interface PermissionGroupFilterInput {
   search?: string | null;
 }
 
+export interface PermissionGroupInput {
+  name?: string | null;
+  permissions?: PermissionEnum[] | null;
+}
+
 export interface PermissionGroupSortingInput {
   direction: OrderDirection;
   field: PermissionGroupSortField;
