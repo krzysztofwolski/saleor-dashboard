@@ -21,6 +21,7 @@ interface OrderDraftDetailsProps {
   ) => void;
   onOrderLineRemove: (id: string) => void;
   onShippingMethodEdit: () => void;
+  disabled: boolean;
 }
 
 const OrderDraftDetails: React.FC<OrderDraftDetailsProps> = ({
@@ -28,7 +29,8 @@ const OrderDraftDetails: React.FC<OrderDraftDetailsProps> = ({
   onOrderLineAdd,
   onOrderLineChange,
   onOrderLineRemove,
-  onShippingMethodEdit
+  onShippingMethodEdit,
+  disabled
 }) => {
   const intl = useIntl();
 
@@ -49,6 +51,7 @@ const OrderDraftDetails: React.FC<OrderDraftDetailsProps> = ({
         }
       />
       <OrderDraftDetailsProducts
+        disabled={disabled}
         lines={maybe(() => order.lines)}
         onOrderLineChange={onOrderLineChange}
         onOrderLineRemove={onOrderLineRemove}

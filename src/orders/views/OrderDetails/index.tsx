@@ -33,6 +33,7 @@ import { OrderDetails_order } from "../../types/OrderDetails";
 import {
   orderListUrl,
   orderUrl,
+  orderDraftListUrl,
   OrderUrlQueryParams,
   OrderUrlDialog
 } from "../../urls";
@@ -91,7 +92,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ id, params }) => {
     variables: DEFAULT_INITIAL_SEARCH_DATA
   });
 
-  const handleBack = () => navigate(orderListUrl());
+  const handleBack = (orderStatus: OrderStatus) => {
+    if (orderStatus === OrderStatus.DRAFT) {
+      return () => navigate(orderDraftListUrl());
+    }
+    return () => navigate(orderListUrl());
+  };
 
   return (
     <TypedOrderDetailsQuery displayLoader variables={{ id }}>
@@ -99,7 +105,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ id, params }) => {
         const order = data?.order;
 
         if (order === null) {
-          return <NotFoundPage onBack={handleBack} />;
+          return <NotFoundPage onBack={handleBack(data?.order.status)} />;
         }
 
         const [openModal, closeModal] = createDialogActionHandlers<
@@ -170,7 +176,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ id, params }) => {
                               order: id
                             })
                           }
-                          onBack={handleBack}
+                          onBack={handleBack(data?.order.status)}
                           order={order}
                           shippingMethods={maybe(
                             () => data.order.availableShippingMethods,
@@ -387,7 +393,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ id, params }) => {
                           )}
                         />
                         <OrderDraftPage
-                          disabled={loading}
+                          disabled={loading || orderLineUpdate.opts.loading}
                           onNoteAdd={variables =>
                             orderAddNote.mutate({
                               input: variables,

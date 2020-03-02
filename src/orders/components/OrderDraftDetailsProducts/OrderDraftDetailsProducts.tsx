@@ -69,12 +69,11 @@ interface OrderDraftDetailsProductsProps {
   lines: OrderDetails_order_lines[];
   onOrderLineChange: (id: string, data: FormData) => void;
   onOrderLineRemove: (id: string) => void;
+  disabled: boolean;
 }
 
-const OrderDraftDetailsProducts: React.FC<
-  OrderDraftDetailsProductsProps
-> = props => {
-  const { lines, onOrderLineChange, onOrderLineRemove } = props;
+const OrderDraftDetailsProducts: React.FC<OrderDraftDetailsProductsProps> = props => {
+  const { lines, onOrderLineChange, onOrderLineRemove, disabled } = props;
 
   const classes = useStyles(props);
 
@@ -143,7 +142,7 @@ const OrderDraftDetailsProducts: React.FC<
                       <DebounceForm
                         change={change}
                         submit={hasChanged ? submit : undefined}
-                        time={200}
+                        time={2000}
                       >
                         {debounce => (
                           <TextField
@@ -151,7 +150,9 @@ const OrderDraftDetailsProducts: React.FC<
                             fullWidth
                             name="quantity"
                             type="number"
+                            inputProps={{ min: 1 }}
                             value={data.quantity}
+                            disabled={disabled}
                             onChange={debounce}
                           />
                         )}
