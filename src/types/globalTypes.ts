@@ -1350,10 +1350,6 @@ export interface UserSortingInput {
   field: UserSortField;
 }
 
-export interface UsersInput {
-  users: string[];
-}
-
 export interface VoucherFilterInput {
   status?: (DiscountStatusEnum | null)[] | null;
   timesUsed?: IntRangeInput | null;
