@@ -573,11 +573,6 @@ export enum PermissionGroupSortField {
   NAME = "NAME",
 }
 
-export enum MembersSortField {
-  NAME = "NAME",
-  EMAIL = "EMAIL",
-}
-
 export enum PluginSortField {
   IS_ACTIVE = "IS_ACTIVE",
   NAME = "NAME",
