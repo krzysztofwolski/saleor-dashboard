@@ -1087,20 +1087,24 @@ export interface PageTranslationInput {
 export interface PermissionGroupCreateInput {
   name: string;
   permissions?: PermissionEnum[] | null;
+  users?: string[] | null;
 }
 
 export interface PermissionGroupFilterInput {
   search?: string | null;
 }
 
-export interface PermissionGroupInput {
-  name?: string | null;
-  permissions?: PermissionEnum[] | null;
-}
-
 export interface PermissionGroupSortingInput {
   direction: OrderDirection;
   field: PermissionGroupSortField;
+}
+
+export interface PermissionGroupUpdateInput {
+  name?: string | null;
+  addPermissions?: PermissionEnum[] | null;
+  removePermissions?: PermissionEnum[] | null;
+  addUsers?: string[] | null;
+  removeUsers?: string[] | null;
 }
 
 export interface PluginFilterInput {

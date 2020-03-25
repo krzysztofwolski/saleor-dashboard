@@ -39,7 +39,6 @@ type AccountError {
 enum AccountErrorCode {
   ACTIVATE_OWN_ACCOUNT
   ACTIVATE_SUPERUSER_ACCOUNT
-  ASSIGN_NON_STAFF_MEMBER
   DEACTIVATE_OWN_ACCOUNT
   DEACTIVATE_SUPERUSER_ACCOUNT
   DELETE_NON_STAFF_USER
@@ -1887,6 +1886,7 @@ type Group implements Node {
   name: String!
   permissions: [PermissionDisplay]
   users: [User]
+  userCanManage: Boolean!
 }
 
 type GroupCountableConnection {
@@ -2865,14 +2865,9 @@ type Mutation {
   ): PermissionGroupCreate
   permissionGroupUpdate(
     id: ID!
-    input: PermissionGroupInput!
+    input: PermissionGroupUpdateInput!
   ): PermissionGroupUpdate
   permissionGroupDelete(id: ID!): PermissionGroupDelete
-  permissionGroupAssignUsers(id: ID!, users: [ID!]!): PermissionGroupAssignUsers
-  permissionGroupUnassignUsers(
-    id: ID!
-    users: [ID!]!
-  ): PermissionGroupUnassignUsers
 }
 
 input NameTranslationInput {
@@ -3503,36 +3498,43 @@ enum PermissionEnum {
   MANAGE_CHECKOUTS
 }
 
-type PermissionGroupAssignUsers {
-  errors: [Error!]!
-  group: Group
-  accountErrors: [AccountError!]!
-}
-
 type PermissionGroupCreate {
   errors: [Error!]!
   group: Group
-  accountErrors: [AccountError!]!
+  permissionGroupErrors: [PermissionGroupError!]!
 }
 
 input PermissionGroupCreateInput {
   name: String!
   permissions: [PermissionEnum!]
+  users: [ID!]
 }
 
 type PermissionGroupDelete {
   errors: [Error!]!
-  accountErrors: [AccountError!]!
+  permissionGroupErrors: [PermissionGroupError!]!
   group: Group
+}
+
+type PermissionGroupError {
+  field: String
+  message: String
+  code: PermissionGroupErrorCode!
+  permissions: [PermissionEnum!]
+  users: [ID!]
+}
+
+enum PermissionGroupErrorCode {
+  ASSIGN_NON_STAFF_MEMBER
+  CANNOT_ADD_AND_REMOVE
+  OUT_OF_SCOPE_PERMISSION
+  CANNOT_REMOVE_FROM_LAST_GROUP
+  REQUIRED
+  UNIQUE
 }
 
 input PermissionGroupFilterInput {
   search: String
-}
-
-input PermissionGroupInput {
-  name: String
-  permissions: [PermissionEnum!]
 }
 
 enum PermissionGroupSortField {
@@ -3544,16 +3546,18 @@ input PermissionGroupSortingInput {
   field: PermissionGroupSortField!
 }
 
-type PermissionGroupUnassignUsers {
-  errors: [Error!]!
-  group: Group
-  accountErrors: [AccountError!]!
-}
-
 type PermissionGroupUpdate {
   errors: [Error!]!
   group: Group
-  accountErrors: [AccountError!]!
+  permissionGroupErrors: [PermissionGroupError!]!
+}
+
+input PermissionGroupUpdateInput {
+  name: String
+  addPermissions: [PermissionEnum!]
+  removePermissions: [PermissionEnum!]
+  addUsers: [ID!]
+  removeUsers: [ID!]
 }
 
 type Plugin implements Node {
@@ -5337,6 +5341,7 @@ type User implements Node & ObjectWithMetadata {
     last: Int
   ): OrderCountableConnection
   permissions: [PermissionDisplay]
+  permissionGroups: [Group]
   avatar(size: Int): Image
   events: [CustomerEvent]
   storedPaymentSources: [PaymentSource]
@@ -5422,10 +5427,6 @@ type UserUpdatePrivateMeta {
   errors: [Error!]!
   accountErrors: [AccountError!]!
   user: User
-}
-
-input UsersInput {
-  users: [ID!]!
 }
 
 type VAT {
