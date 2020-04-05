@@ -39,6 +39,7 @@ type AccountError {
 enum AccountErrorCode {
   ACTIVATE_OWN_ACCOUNT
   ACTIVATE_SUPERUSER_ACCOUNT
+  CANNOT_ADD_AND_REMOVE
   DEACTIVATE_OWN_ACCOUNT
   DEACTIVATE_SUPERUSER_ACCOUNT
   DELETE_NON_STAFF_USER
@@ -49,6 +50,9 @@ enum AccountErrorCode {
   INVALID
   INVALID_PASSWORD
   NOT_FOUND
+  OUT_OF_SCOPE_USER
+  OUT_OF_SCOPE_GROUP
+  OUT_OF_SCOPE_PERMISSION
   PASSWORD_ENTIRELY_NUMERIC
   PASSWORD_TOO_COMMON
   PASSWORD_TOO_SHORT
@@ -1884,7 +1888,7 @@ input GiftCardUpdateInput {
 type Group implements Node {
   id: ID!
   name: String!
-  permissions: [PermissionDisplay]
+  permissions: [Permission]
   users: [User]
   userCanManage: Boolean!
 }
@@ -2236,10 +2240,6 @@ input MoveProductInput {
 }
 
 type Mutation {
-  wishlistAddProduct(productId: ID!): WishlistAddProductMutation
-  wishlistRemoveProduct(productId: ID!): WishlistRemoveProductMutation
-  wishlistAddVariant(variantId: ID!): WishlistAddProductVariantMutation
-  wishlistRemoveVariant(variantId: ID!): WishlistRemoveProductVariantMutation
   webhookCreate(input: WebhookCreateInput!): WebhookCreate
   webhookDelete(id: ID!): WebhookDelete
   webhookUpdate(id: ID!, input: WebhookUpdateInput!): WebhookUpdate
@@ -2814,7 +2814,7 @@ type Mutation {
   customerDelete(id: ID!): CustomerDelete
   customerBulkDelete(ids: [ID]!): CustomerBulkDelete
   staffCreate(input: StaffCreateInput!): StaffCreate
-  staffUpdate(id: ID!, input: StaffInput!): StaffUpdate
+  staffUpdate(id: ID!, input: StaffUpdateInput!): StaffUpdate
   staffDelete(id: ID!): StaffDelete
   staffBulkDelete(ids: [ID]!): StaffBulkDelete
   userAvatarUpdate(image: Upload!): UserAvatarUpdate
@@ -3475,7 +3475,7 @@ type PaymentVoid {
   paymentErrors: [PaymentError!]!
 }
 
-type PermissionDisplay {
+type Permission {
   code: PermissionEnum!
   name: String!
 }
@@ -3528,6 +3528,7 @@ enum PermissionGroupErrorCode {
   ASSIGN_NON_STAFF_MEMBER
   CANNOT_ADD_AND_REMOVE
   OUT_OF_SCOPE_PERMISSION
+  OUT_OF_SCOPE_USER
   CANNOT_REMOVE_FROM_LAST_GROUP
   REQUIRED
   UNIQUE
@@ -4671,7 +4672,7 @@ type ServiceAccount implements Node & ObjectWithMetadata {
   name: String
   created: DateTime
   isActive: Boolean
-  permissions: [PermissionDisplay]
+  permissions: [Permission]
   tokens: [ServiceAccountToken]
   privateMetadata: [MetadataItem]!
   metadata: [MetadataItem]!
@@ -4793,6 +4794,7 @@ enum ShippingErrorCode {
   NOT_FOUND
   REQUIRED
   UNIQUE
+  CANNOT_ADD_AND_REMOVE
 }
 
 type ShippingMethod implements Node {
@@ -4934,7 +4936,7 @@ type Shop {
   languages: [LanguageDisplay]!
   name: String!
   navigation: Navigation
-  permissions: [PermissionDisplay]!
+  permissions: [Permission]!
   phonePrefixes: [String]!
   headerText: String
   includeTaxesInPrices: Boolean!
@@ -5037,7 +5039,7 @@ type StaffBulkDelete {
 
 type StaffCreate {
   errors: [Error!]!
-  accountErrors: [AccountError!]!
+  staffErrors: [StaffError!]!
   user: User
 }
 
@@ -5048,22 +5050,22 @@ input StaffCreateInput {
   isActive: Boolean
   note: String
   permissions: [PermissionEnum]
+  addGroups: [ID!]
   redirectUrl: String
 }
 
 type StaffDelete {
   errors: [Error!]!
-  accountErrors: [AccountError!]!
+  staffErrors: [StaffError!]!
   user: User
 }
 
-input StaffInput {
-  firstName: String
-  lastName: String
-  email: String
-  isActive: Boolean
-  note: String
-  permissions: [PermissionEnum]
+type StaffError {
+  field: String
+  message: String
+  code: AccountErrorCode!
+  permissions: [PermissionEnum!]
+  groups: [ID!]
 }
 
 enum StaffMemberStatus {
@@ -5104,8 +5106,19 @@ type StaffNotificationRecipientUpdate {
 
 type StaffUpdate {
   errors: [Error!]!
-  accountErrors: [AccountError!]!
+  staffErrors: [StaffError!]!
   user: User
+}
+
+input StaffUpdateInput {
+  firstName: String
+  lastName: String
+  email: String
+  isActive: Boolean
+  note: String
+  permissions: [PermissionEnum]
+  addGroups: [ID!]
+  removeGroups: [ID!]
 }
 
 input StaffUserInput {
@@ -5340,17 +5353,16 @@ type User implements Node & ObjectWithMetadata {
     first: Int
     last: Int
   ): OrderCountableConnection
-  permissions: [PermissionDisplay]
+  permissions: [Permission]
+    @deprecated(
+      reason: "Will be removed in Saleor 2.11.Use the `userPermissions` instead."
+    )
+  userPermissions: [UserPermission]
   permissionGroups: [Group]
+  editableGroups: [Group]
   avatar(size: Int): Image
   events: [CustomerEvent]
   storedPaymentSources: [PaymentSource]
-  wishlist(
-    before: String
-    after: String
-    first: Int
-    last: Int
-  ): WishlistItemCountableConnection
 }
 
 type UserAvatarDelete {
@@ -5403,6 +5415,12 @@ input UserCreateInput {
   isActive: Boolean
   note: String
   redirectUrl: String
+}
+
+type UserPermission {
+  code: PermissionEnum!
+  name: String!
+  sourcePermissionGroups(userId: ID!): [Group!]
 }
 
 enum UserSortField {
@@ -5693,6 +5711,7 @@ enum WarehouseErrorCode {
 
 input WarehouseFilterInput {
   search: String
+  ids: [ID]
 }
 
 type WarehouseShippingZoneAssign {
@@ -5859,79 +5878,6 @@ enum WeightUnitsEnum {
   LB
   OZ
   G
-}
-
-type Wishlist implements Node {
-  id: ID!
-  createdAt: DateTime!
-  items(
-    before: String
-    after: String
-    first: Int
-    last: Int
-    id: ID
-  ): WishlistItemCountableConnection!
-}
-
-type WishlistAddProductMutation {
-  errors: [Error!]!
-  wishlist: [WishlistItem]
-  wishlistErrors: [WishlistError!]!
-}
-
-type WishlistAddProductVariantMutation {
-  errors: [Error!]!
-  wishlist: [WishlistItem]
-  wishlistErrors: [WishlistError!]!
-}
-
-type WishlistError {
-  field: String
-  message: String
-  code: WishlistErrorCode!
-}
-
-enum WishlistErrorCode {
-  GRAPHQL_ERROR
-  INVALID
-  NOT_FOUND
-  REQUIRED
-  UNIQUE
-}
-
-type WishlistItem implements Node {
-  id: ID!
-  wishlist: Wishlist!
-  product: Product!
-  variants(
-    before: String
-    after: String
-    first: Int
-    last: Int
-  ): ProductVariantCountableConnection!
-}
-
-type WishlistItemCountableConnection {
-  pageInfo: PageInfo!
-  edges: [WishlistItemCountableEdge!]!
-  totalCount: Int
-}
-
-type WishlistItemCountableEdge {
-  node: WishlistItem!
-  cursor: String!
-}
-
-type WishlistRemoveProductMutation {
-  errors: [Error!]!
-  wishlist: [WishlistItem]
-  wishlistErrors: [WishlistError!]!
-}
-
-type WishlistRemoveProductVariantMutation {
-  errors: [Error!]!
-  wishlist: [WishlistItem]
-  wishlistErrors: [WishlistError!]!
 }
 
 scalar _Any

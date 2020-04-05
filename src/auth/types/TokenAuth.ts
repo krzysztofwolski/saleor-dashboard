@@ -15,7 +15,7 @@ export interface TokenAuth_tokenCreate_errors {
 }
 
 export interface TokenAuth_tokenCreate_user_permissions {
-  __typename: "PermissionDisplay";
+  __typename: "Permission";
   code: PermissionEnum;
   name: string;
 }

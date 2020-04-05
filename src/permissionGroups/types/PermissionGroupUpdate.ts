@@ -30,7 +30,7 @@ export interface PermissionGroupUpdate_permissionGroupUpdate_group_users {
 }
 
 export interface PermissionGroupUpdate_permissionGroupUpdate_group_permissions {
-  __typename: "PermissionDisplay";
+  __typename: "Permission";
   code: PermissionEnum;
   name: string;
 }

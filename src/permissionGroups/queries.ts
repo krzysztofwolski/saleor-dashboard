@@ -25,7 +25,7 @@ export const permissionGroupFragment = gql`
 `;
 
 export const permissionFragment = gql`
-  fragment PermissionFragment on PermissionDisplay {
+  fragment PermissionFragment on Permission {
     code
     name
   }

@@ -15,7 +15,7 @@ export interface SetPassword_setPassword_errors {
 }
 
 export interface SetPassword_setPassword_user_permissions {
-  __typename: "PermissionDisplay";
+  __typename: "Permission";
   code: PermissionEnum;
   name: string;
 }

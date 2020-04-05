@@ -24,7 +24,7 @@ export interface PermissionGroupDetails_permissionGroup_users {
 }
 
 export interface PermissionGroupDetails_permissionGroup_permissions {
-  __typename: "PermissionDisplay";
+  __typename: "Permission";
   code: PermissionEnum;
   name: string;
 }

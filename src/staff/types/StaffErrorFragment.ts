@@ -2,14 +2,14 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { PermissionEnum } from "./../../types/globalTypes";
+import { AccountErrorCode } from "./../../types/globalTypes";
 
 // ====================================================
-// GraphQL fragment: PermissionFragment
+// GraphQL fragment: StaffErrorFragment
 // ====================================================
 
-export interface PermissionFragment {
-  __typename: "Permission";
-  code: PermissionEnum;
-  name: string;
+export interface StaffErrorFragment {
+  __typename: "StaffError";
+  code: AccountErrorCode;
+  field: string | null;
 }
