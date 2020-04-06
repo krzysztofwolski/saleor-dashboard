@@ -96,9 +96,9 @@ const StaffDetailsPage: React.FC<StaffDetailsPageProps> = ({
 
   return (
     <Form initial={initialForm} onSubmit={onSubmit} confirmLeave>
-      {({ data: formData, change, hasChanged, submit }) => {
+      {({ data: formData, change, hasChanged, submit, toggleValue }) => {
         const permissionGroupsChange = createMultiAutocompleteSelectHandler(
-          change,
+          toggleValue,
           setPermissionGroupsDisplayValues,
           permissionGroupsDisplayValues,
           availablePermissionGroups?.map(group => ({
