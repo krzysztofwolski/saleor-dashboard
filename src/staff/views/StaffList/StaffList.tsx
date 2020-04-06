@@ -1,31 +1,31 @@
 import React from "react";
-import urlJoin from "url-join";
-
-import useListSettings from "@saleor/hooks/useListSettings";
-import useNavigator from "@saleor/hooks/useNavigator";
-import useNotifier from "@saleor/hooks/useNotifier";
-import usePaginator, {
-  createPaginationState
-} from "@saleor/hooks/usePaginator";
 import { useIntl } from "react-intl";
+import urlJoin from "url-join";
 
 import { newPasswordUrl } from "@saleor/auth/urls";
 import DeleteFilterTabDialog from "@saleor/components/DeleteFilterTabDialog";
 import SaveFilterTabDialog, {
   SaveFilterTabDialogFormData
 } from "@saleor/components/SaveFilterTabDialog";
-import { APP_MOUNT_URI } from "@saleor/config";
+import { APP_MOUNT_URI, DEFAULT_INITIAL_SEARCH_DATA } from "@saleor/config";
 import { configurationMenuUrl } from "@saleor/configuration";
+import useListSettings from "@saleor/hooks/useListSettings";
+import useNavigator from "@saleor/hooks/useNavigator";
+import useNotifier from "@saleor/hooks/useNotifier";
+import usePaginator, {
+  createPaginationState
+} from "@saleor/hooks/usePaginator";
 import useShop from "@saleor/hooks/useShop";
 import { commonMessages } from "@saleor/intl";
-import { maybe } from "@saleor/misc";
+import usePermissionGroupSearch from "@saleor/searches/usePermissionGroupSearch";
 import { ListViews } from "@saleor/types";
-import { getSortParams } from "@saleor/utils/sort";
-import createSortHandler from "@saleor/utils/handlers/sortHandler";
 import createDialogActionHandlers from "@saleor/utils/handlers/dialogActionHandlers";
 import createFilterHandlers from "@saleor/utils/handlers/filterHandlers";
+import createSortHandler from "@saleor/utils/handlers/sortHandler";
+import { getSortParams } from "@saleor/utils/sort";
+
 import StaffAddMemberDialog, {
-  FormData as AddStaffMemberForm
+  AddMemberFormData
 } from "../../components/StaffAddMemberDialog";
 import StaffListPage from "../../components/StaffListPage";
 import { TypedStaffMemberAddMutation } from "../../mutations";
@@ -41,11 +41,11 @@ import {
   areFiltersApplied,
   deleteFilterTab,
   getActiveFilters,
+  getFilterOpts,
+  getFilterQueryParam,
   getFilterTabs,
   getFilterVariables,
-  saveFilterTab,
-  getFilterQueryParam,
-  getFilterOpts
+  saveFilterTab
 } from "./filters";
 import { getSortQueryVariables } from "./sort";
 
@@ -64,7 +64,7 @@ export const StaffList: React.FC<StaffListProps> = ({ params }) => {
   const shop = useShop();
 
   const paginationState = createPaginationState(settings.rowNumber, params);
-  const currencySymbol = maybe(() => shop.defaultCurrency, "USD");
+  const currencySymbol = shop?.defaultCurrency || "USD";
   const queryVariables = React.useMemo(
     () => ({
       ...paginationState,
@@ -131,19 +131,25 @@ export const StaffList: React.FC<StaffListProps> = ({ params }) => {
     }
   };
 
+  const {
+    loadMore: loadMorePermissionGroups,
+    search: searchPermissionGroups,
+    result: searchPermissionGroupsOpts
+  } = usePermissionGroupSearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
+
   return (
     <TypedStaffMemberAddMutation onCompleted={handleStaffMemberAddSuccess}>
       {(addStaffMember, addStaffMemberData) => {
-        const handleStaffMemberAdd = (variables: AddStaffMemberForm) =>
+        const handleStaffMemberAdd = (variables: AddMemberFormData) =>
           addStaffMember({
             variables: {
               input: {
+                addGroups: variables.permissionGroups,
                 email: variables.email,
                 firstName: variables.firstName,
                 lastName: variables.lastName,
-                permissions: variables.fullAccess
-                  ? maybe(() => shop.permissions.map(perm => perm.code))
-                  : undefined,
                 redirectUrl: urlJoin(
                   window.location.origin,
                   APP_MOUNT_URI === "/" ? "" : APP_MOUNT_URI,
@@ -154,7 +160,7 @@ export const StaffList: React.FC<StaffListProps> = ({ params }) => {
           });
 
         const { loadNextPage, loadPreviousPage, pageInfo } = paginate(
-          maybe(() => data.staffUsers.pageInfo),
+          data?.staffUsers.pageInfo,
           paginationState,
           params
         );
@@ -179,9 +185,7 @@ export const StaffList: React.FC<StaffListProps> = ({ params }) => {
               settings={settings}
               pageInfo={pageInfo}
               sort={getSortParams(params)}
-              staffMembers={maybe(() =>
-                data.staffUsers.edges.map(edge => edge.node)
-              )}
+              staffMembers={data?.staffUsers.edges.map(edge => edge.node)}
               onAdd={() => openModal("add")}
               onBack={() => navigate(configurationMenuUrl)}
               onNextPage={loadNextPage}
@@ -191,14 +195,23 @@ export const StaffList: React.FC<StaffListProps> = ({ params }) => {
               onSort={handleSort}
             />
             <StaffAddMemberDialog
-              confirmButtonState={addStaffMemberData.status}
-              errors={maybe(
-                () => addStaffMemberData.data.staffCreate.errors,
-                []
+              availablePermissionGroups={searchPermissionGroupsOpts.data?.search.edges.map(
+                edge => edge.node
               )}
+              confirmButtonState={addStaffMemberData.status}
+              initialSearch=""
+              disabled={loading}
+              errors={addStaffMemberData.data?.staffCreate.errors || []}
               open={params.action === "add"}
               onClose={closeModal}
               onConfirm={handleStaffMemberAdd}
+              fetchMorePermissionGroups={{
+                hasMore:
+                  searchPermissionGroupsOpts.data?.search.pageInfo.hasNextPage,
+                loading: searchPermissionGroupsOpts.loading,
+                onFetchMore: loadMorePermissionGroups
+              }}
+              onSearchChange={searchPermissionGroups}
             />
             <SaveFilterTabDialog
               open={params.action === "save-search"}
@@ -211,7 +224,7 @@ export const StaffList: React.FC<StaffListProps> = ({ params }) => {
               confirmButtonState="default"
               onClose={closeModal}
               onSubmit={handleTabDelete}
-              tabName={maybe(() => tabs[currentTab - 1].name, "...")}
+              tabName={tabs[currentTab - 1]?.name || "..."}
             />
           </>
         );

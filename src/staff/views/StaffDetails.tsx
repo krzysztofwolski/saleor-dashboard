@@ -1,17 +1,20 @@
-import DialogContentText from "@material-ui/core/DialogContentText";
 import React from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
+import DialogContentText from "@material-ui/core/DialogContentText";
 import ActionDialog from "@saleor/components/ActionDialog";
+import NotFoundPage from "@saleor/components/NotFoundPage";
 import { WindowTitle } from "@saleor/components/WindowTitle";
+import { DEFAULT_INITIAL_SEARCH_DATA } from "@saleor/config";
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
-import useShop from "@saleor/hooks/useShop";
 import useUser from "@saleor/hooks/useUser";
 import { commonMessages } from "@saleor/intl";
-import NotFoundPage from "@saleor/components/NotFoundPage";
-import { maybe } from "../../misc";
+import { maybe } from "@saleor/misc";
+import usePermissionGroupSearch from "@saleor/searches/usePermissionGroupSearch";
+
 import StaffDetailsPage from "../components/StaffDetailsPage/StaffDetailsPage";
+import StaffPasswordResetDialog from "../components/StaffPasswordResetDialog";
 import {
   TypedStaffAvatarDeleteMutation,
   TypedStaffAvatarUpdateMutation,
@@ -20,6 +23,7 @@ import {
   useChangeStaffPassword
 } from "../mutations";
 import { TypedStaffMemberDetailsQuery } from "../queries";
+import { ChangeStaffPassword } from "../types/ChangeStaffPassword";
 import { StaffAvatarDelete } from "../types/StaffAvatarDelete";
 import { StaffAvatarUpdate } from "../types/StaffAvatarUpdate";
 import { StaffMemberDelete } from "../types/StaffMemberDelete";
@@ -29,8 +33,7 @@ import {
   staffMemberDetailsUrl,
   StaffMemberDetailsUrlQueryParams
 } from "../urls";
-import StaffPasswordResetDialog from "../components/StaffPasswordResetDialog";
-import { ChangeStaffPassword } from "../types/ChangeStaffPassword";
+import { groupsDiff } from "../utils";
 
 interface OrderListProps {
   id: string;
@@ -42,7 +45,6 @@ export const StaffDetails: React.FC<OrderListProps> = ({ id, params }) => {
   const notify = useNotifier();
   const user = useUser();
   const intl = useIntl();
-  const shop = useShop();
 
   const closeModal = () =>
     navigate(
@@ -65,6 +67,14 @@ export const StaffDetails: React.FC<OrderListProps> = ({ id, params }) => {
   });
 
   const handleBack = () => navigate(staffListUrl());
+
+  const {
+    loadMore: loadMorePermissionGroups,
+    search: searchPermissionGroups,
+    result: searchPermissionGroupsOpts
+  } = usePermissionGroupSearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
 
   return (
     <TypedStaffMemberDetailsQuery displayLoader variables={{ id }}>
@@ -123,7 +133,7 @@ export const StaffDetails: React.FC<OrderListProps> = ({ id, params }) => {
                       >
                         {(deleteStaffAvatar, deleteAvatarResult) => {
                           const isUserSameAsViewer = maybe(
-                            () => user.user.id === data.user.id,
+                            () => user.user?.id === data.user?.id,
                             true
                           );
 
@@ -140,6 +150,7 @@ export const StaffDetails: React.FC<OrderListProps> = ({ id, params }) => {
                                 canRemove={!isUserSameAsViewer}
                                 disabled={loading}
                                 onBack={handleBack}
+                                initialSearch=""
                                 onChangePassword={() =>
                                   navigate(
                                     staffMemberDetailsUrl(id, {
@@ -154,7 +165,8 @@ export const StaffDetails: React.FC<OrderListProps> = ({ id, params }) => {
                                     })
                                   )
                                 }
-                                onSubmit={variables =>
+                                onSubmit={variables => {
+                                  // FIXME: multiselect saves last chosen selection instead of using array
                                   updateStaffMember({
                                     variables: {
                                       id,
@@ -163,11 +175,11 @@ export const StaffDetails: React.FC<OrderListProps> = ({ id, params }) => {
                                         firstName: variables.firstName,
                                         isActive: variables.isActive,
                                         lastName: variables.lastName,
-                                        permissions: variables.permissions
+                                        ...groupsDiff(data?.user, variables)
                                       }
                                     }
-                                  })
-                                }
+                                  });
+                                }}
                                 onImageUpload={file =>
                                   updateStaffAvatar({
                                     variables: {
@@ -182,9 +194,19 @@ export const StaffDetails: React.FC<OrderListProps> = ({ id, params }) => {
                                     })
                                   )
                                 }
-                                permissions={shop?.permissions}
+                                availablePermissionGroups={searchPermissionGroupsOpts.data?.search.edges.map(
+                                  edge => edge.node
+                                )}
                                 staffMember={staffMember}
                                 saveButtonBarState={updateResult.status}
+                                fetchMorePermissionGroups={{
+                                  hasMore:
+                                    searchPermissionGroupsOpts.data?.search
+                                      .pageInfo.hasNextPage,
+                                  loading: searchPermissionGroupsOpts.loading,
+                                  onFetchMore: loadMorePermissionGroups
+                                }}
+                                onSearchChange={searchPermissionGroups}
                               />
                               <ActionDialog
                                 open={params.action === "remove"}
