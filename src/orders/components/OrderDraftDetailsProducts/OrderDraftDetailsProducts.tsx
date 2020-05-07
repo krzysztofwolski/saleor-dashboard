@@ -18,8 +18,10 @@ import Skeleton from "@saleor/components/Skeleton";
 import TableCellAvatar, {
   AVATAR_MARGIN
 } from "@saleor/components/TableCellAvatar";
+import Debounce from "@saleor/components/Debounce";
 import { maybe, renderCollection } from "../../../misc";
 import { OrderDetails_order_lines } from "../../types/OrderDetails";
+import QuantityInput from "./QuantityInput";
 
 export interface FormData {
   quantity: number;
@@ -45,7 +47,7 @@ const useStyles = makeStyles(
     },
     colQuantity: {
       textAlign: "right",
-      width: 80
+      width: 150
     },
     colTotal: {
       textAlign: "right",
@@ -55,8 +57,7 @@ const useStyles = makeStyles(
       "& input": {
         padding: "12px 12px 10px",
         textAlign: "right"
-      },
-      width: 60
+      }
     },
     table: {
       tableLayout: "fixed"
@@ -71,9 +72,7 @@ interface OrderDraftDetailsProductsProps {
   onOrderLineRemove: (id: string) => void;
 }
 
-const OrderDraftDetailsProducts: React.FC<
-  OrderDraftDetailsProductsProps
-> = props => {
+const OrderDraftDetailsProducts: React.FC<OrderDraftDetailsProductsProps> = props => {
   const { lines, onOrderLineChange, onOrderLineRemove } = props;
 
   const classes = useStyles(props);
@@ -135,29 +134,40 @@ const OrderDraftDetailsProducts: React.FC<
               </TableCellAvatar>
               <TableCell className={classes.colQuantity}>
                 {maybe(() => line.quantity) ? (
-                  <Form
-                    initial={{ quantity: line.quantity }}
-                    onSubmit={data => onOrderLineChange(line.id, data)}
-                  >
-                    {({ change, data, hasChanged, submit }) => (
-                      <DebounceForm
-                        change={change}
-                        submit={hasChanged ? submit : undefined}
-                        time={200}
-                      >
-                        {debounce => (
-                          <TextField
-                            className={classes.quantityField}
-                            fullWidth
-                            name="quantity"
-                            type="number"
-                            value={data.quantity}
-                            onChange={debounce}
-                          />
-                        )}
-                      </DebounceForm>
-                    )}
-                  </Form>
+                  // <Form
+                  //   initial={{ quantity: line.quantity }}
+                  //   onSubmit={data => onOrderLineChange(line.id, data)}
+                  // >
+                  //   {({ change, data, hasChanged, submit }) => (
+                  //     <Debounce debounceFn={submit} time={2000}>
+                  //       {debounce => (
+                  //         <TextField
+                  //           className={classes.quantityField}
+                  //           fullWidth
+                  //           name="quantity"
+                  //           type="number"
+                  //           inputProps={{ min: 1 }}
+                  //           value={data.quantity}
+                  //           disabled={disabled}
+                  //           onChange={event => {
+                  //             change(event);
+                  //             debounce();
+                  //           }}
+                  //         />
+                  //       )}
+                  //     </Debounce>
+                  //   )}
+                  // </Form>
+                  <QuantityInput
+                    onChange={quantity =>
+                      onOrderLineChange(line.id, {
+                        quantity
+                      })
+                    }
+                    className={classes.quantityField}
+                    disabled={disabled}
+                    value={line.quantity}
+                  />
                 ) : (
                   <Skeleton />
                 )}

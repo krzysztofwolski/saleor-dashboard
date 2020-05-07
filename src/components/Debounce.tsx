@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useRef } from "react";
+import _ from "lodash";
 
 export interface DebounceProps<T> {
   children: (props: (...args: T[]) => void) => React.ReactNode;
@@ -9,13 +10,13 @@ export interface DebounceProps<T> {
 export class Debounce<T> extends React.Component<DebounceProps<T>> {
   timer = null;
 
-  handleDebounce = (...args: T[]) => {
+  handleDebounce = useRef((...args: T[]) => {
     const { debounceFn, time } = this.props;
     if (this.timer) {
       clearTimeout(this.timer);
     }
     this.timer = setTimeout(() => debounceFn(...args), time || 200);
-  };
+  }).current;
 
   componentWillUnmount() {
     clearTimeout(this.timer);

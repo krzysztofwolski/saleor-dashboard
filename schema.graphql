@@ -2893,8 +2893,8 @@ type Order implements Node & ObjectWithMetadata {
   voucher: Voucher
   giftCards: [GiftCard]
   discount: Money
-  discountName: String!
-  translatedDiscountName: String!
+  discountName: String
+  translatedDiscountName: String
   displayGrossPrices: Boolean!
   customerNote: String!
   weight: Weight
@@ -2944,7 +2944,7 @@ type OrderAddNote {
 }
 
 input OrderAddNoteInput {
-  message: String
+  message: String!
 }
 
 type OrderBulkCancel {
@@ -5386,10 +5386,6 @@ type UserUpdatePrivateMeta {
   errors: [Error!]!
   accountErrors: [AccountError!]!
   user: User
-}
-
-input UsersInput {
-  users: [ID!]!
 }
 
 type VAT {

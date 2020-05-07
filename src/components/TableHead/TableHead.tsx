@@ -81,6 +81,7 @@ const useStyles = makeStyles(
   { name: "TableHead" }
 );
 
+// TODO: Rename it to include info bout checkbox
 const TableHead: React.FC<TableHeadProps> = props => {
   const {
     children,
