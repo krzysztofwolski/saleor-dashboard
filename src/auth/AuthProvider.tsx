@@ -9,6 +9,7 @@ import {
 } from "@saleor/utils/credentialsManagement";
 import { MutationFunction, MutationResult } from "react-apollo";
 import { maybe } from "@saleor/misc";
+import { DEMO_MODE } from "@saleor/config";
 import {
   TypedTokenAuthMutation,
   TypedVerifyTokenMutation,
@@ -17,7 +18,12 @@ import {
 import { TokenAuth, TokenAuthVariables } from "./types/TokenAuth";
 import { User } from "./types/User";
 import { VerifyToken, VerifyTokenVariables } from "./types/VerifyToken";
-import { getAuthToken, removeAuthToken, setAuthToken } from "./utils";
+import {
+  getAuthToken,
+  removeAuthToken,
+  setAuthToken,
+  displayDemoMessage
+} from "./utils";
 import { RefreshToken, RefreshTokenVariables } from "./types/RefreshToken";
 import { UserContext } from "./";
 
@@ -36,13 +42,11 @@ const AuthProviderOperations: React.FC<AuthProviderOperationsProps> = ({
   const intl = useIntl();
   const notify = useNotifier();
 
-  const handleLogin = () =>
-    notify({
-      text: intl.formatMessage({
-        defaultMessage:
-          "Just to let you know... You're in demo mode. You can play around with the dashboard but can't save changes."
-      })
-    });
+  const handleLogin = () => {
+    if (DEMO_MODE) {
+      displayDemoMessage(intl, notify);
+    }
+  };
 
   return (
     <TypedTokenAuthMutation>
@@ -88,7 +92,7 @@ interface AuthProviderProps {
     MutationFunction<RefreshToken, RefreshTokenVariables>,
     MutationResult<RefreshToken>
   ];
-  onLogin: () => void;
+  onLogin?: () => void;
 }
 
 interface AuthProviderState {
@@ -152,7 +156,9 @@ class AuthProvider extends React.Component<
 
     tokenAuthFn({ variables: { email, password } }).then(result => {
       if (result && !result.data.tokenCreate.errors.length) {
-        onLogin();
+        if (!!onLogin) {
+          onLogin();
+        }
         saveCredentials(result.data.tokenCreate.user, password);
       }
     });

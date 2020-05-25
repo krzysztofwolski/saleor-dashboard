@@ -8,6 +8,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import Form from "@saleor/components/Form";
 import { FormSpacer } from "@saleor/components/FormSpacer";
 import { commonMessages } from "@saleor/intl";
+import { DEMO_MODE } from "@saleor/config";
 
 export interface FormData {
   email: string;
@@ -54,14 +55,16 @@ const LoginCard: React.FC<LoginCardProps> = props => {
   const classes = useStyles(props);
   const intl = useIntl();
 
+  let initialFormData = { email: "", password: "" };
+  if (DEMO_MODE) {
+    initialFormData = {
+      email: "admin@example.com",
+      password: "admin"
+    };
+  }
+
   return (
-    <Form
-      initial={{
-        email: "admin@example.com",
-        password: "admin"
-      }}
-      onSubmit={onSubmit}
-    >
+    <Form initial={initialFormData} onSubmit={onSubmit}>
       {({ change: handleChange, data, submit: handleSubmit }) => (
         <>
           {error && (
